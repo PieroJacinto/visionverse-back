@@ -90,12 +90,14 @@ class AuthController {
           return res.status(500).json({ success: false, message: "Error al cerrar sesión" });
         }
   
-        // Devolver JSON con la URL de redirección
+        res.clearCookie('connect.sid', { path: '/', httpOnly: true, secure: true, sameSite: 'none' });
+  
         const { frontendURL } = getURLs();
-        res.json({ success: true, redirectUrl: `${frontendURL}/login` });
+        return res.json({ success: true, redirectUrl: `${frontendURL}/login` });
       });
     });
-  } 
+  }
+   
   
   
 }
