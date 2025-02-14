@@ -37,7 +37,10 @@ class AuthController {
 
   initiateGoogleAuth(req, res, next) {
     console.log('Iniciando autenticación con Google');
-    const { callbackURL } = getURLs();
+    const callbackURL = process.env.NODE_ENV === 'production'
+      ? 'https://visionverse-back.vercel.app/api/auth/google/callback'
+      : 'http://localhost:3000/api/auth/google/callback';
+    
     console.log('Using callback URL:', callbackURL);
     
     passport.authenticate('google', { 

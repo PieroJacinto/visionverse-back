@@ -4,10 +4,8 @@ import * as process from 'process';
 
 const getCallbackURL = () => {
   if (process.env.NODE_ENV === 'production') {
-    // Usa la URL de Vercel
-    return `https://${process.env.VERCEL_URL}/api/auth/google/callback`;
+    return 'https://visionverse-back.vercel.app/api/auth/google/callback';
   }
-  // URL local para desarrollo
   return 'http://localhost:3000/api/auth/google/callback';
 };
 
