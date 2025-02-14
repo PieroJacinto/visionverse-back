@@ -15,9 +15,10 @@ export const createApp = () => {
   const allowedOrigins = [
     process.env.FRONTEND_URL_PROD,
     process.env.FRONTEND_URL_DEV,
-    `https://${process.env.VERCEL_URL}`
+    'https://visionverse-front.vercel.app',
+    'https://visionverse-front-pierojacintos-projects.vercel.app'
   ];
-
+  
   app.use(cors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) {
@@ -27,11 +28,8 @@ export const createApp = () => {
         callback(new Error('Not allowed by CORS'));
       }
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true
   }));
-
   app.use(express.json());
 
   app.use(session({
