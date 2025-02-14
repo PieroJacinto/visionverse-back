@@ -40,8 +40,9 @@ export const createApp = () => {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-    }
+      sameSite: 'none'  // Importante para cross-site cookies
+    },
+    proxy: true  // Importante para Vercel
   }));
 
   app.use(passport.initialize());
