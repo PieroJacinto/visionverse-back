@@ -77,24 +77,25 @@ class AuthController {
     })(req, res, next);
   }
 
-  logout(req, res, next) {
+  logout(req, res) {
     req.logout((err) => {
       if (err) {
         console.error("Error al cerrar sesión:", err);
         return res.status(500).json({ success: false, message: "Error al cerrar sesión" });
       }
-      
+  
       req.session.destroy((err) => {
         if (err) {
           console.error("Error al destruir la sesión:", err);
           return res.status(500).json({ success: false, message: "Error al cerrar sesión" });
         }
   
+        // Devolver JSON con la URL de redirección
         const { frontendURL } = getURLs();
         res.json({ success: true, redirectUrl: `${frontendURL}/login` });
       });
     });
-  }
+  } 
   
   
 }
