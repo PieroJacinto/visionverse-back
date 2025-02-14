@@ -3,17 +3,13 @@ import * as process from 'process';
 
 const getURLs = () => {
   const isProduction = process.env.NODE_ENV === 'production';
-  const frontendURL = isProduction 
-    ? process.env.FRONTEND_URL_PROD 
-    : process.env.FRONTEND_URL_DEV;
-  
-  const baseURL = isProduction 
-    ? `https://${process.env.VERCEL_URL}` 
-    : 'http://localhost:3000';
-    
   return {
-    frontendURL,
-    callbackURL: `${baseURL}/api/auth/google/callback`
+    frontendURL: isProduction 
+      ? process.env.FRONTEND_URL_PROD 
+      : process.env.FRONTEND_URL_DEV,
+    callbackURL: isProduction 
+      ? 'https://visionverse-back.vercel.app/api/auth/google/callback'
+      : 'http://localhost:3000/api/auth/google/callback'
   };
 };
 
@@ -50,29 +46,32 @@ class AuthController {
   }
 
   handleGoogleCallback(req, res, next) {
-    console.log('Callback de Google recibido');
+    console.log('Google callback received');
+    console.log('Query params:', req.query);
+    console.log('Headers:', req.headers);
+    
     const { frontendURL, callbackURL } = getURLs();
     
     passport.authenticate('google', {
-      callbackURL
+      callbackURL,
+      failureRedirect: `${frontendURL}/login?error=auth_failed`
     }, (err, user, info) => {
       if (err) {
-        console.error('Error en autenticación:', err);
+        console.error('Authentication error:', err);
         return res.redirect(`${frontendURL}/login?error=auth_failed`);
       }
       
       if (!user) {
-        console.log('No se encontró usuario');
+        console.log('No user found:', info);
         return res.redirect(`${frontendURL}/login?error=unauthorized`);
       }
       
       req.logIn(user, (err) => {
         if (err) {
-          console.error('Error en login:', err);
+          console.error('Login error:', err);
           return res.redirect(`${frontendURL}/login?error=auth_failed`);
         }
         
-        console.log('Usuario autenticado exitosamente, redirigiendo a welcome');
         return res.redirect(`${frontendURL}/welcome`);
       });
     })(req, res, next);
