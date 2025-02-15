@@ -16,7 +16,8 @@ export const createApp = () => {
     process.env.FRONTEND_URL_PROD,
     process.env.FRONTEND_URL_DEV,
     'https://visionverse-front.vercel.app',
-    'https://visionverse-front-pierojacintos-projects.vercel.app'
+    'https://visionverse-front-pierojacintos-projects.vercel.app',
+    'http://localhost:5173' 
   ];
   
   app.use(cors({
@@ -40,9 +41,9 @@ export const createApp = () => {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: 'none'  // Importante para cross-site cookies
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     },
-    proxy: true  // Importante para Vercel
+    proxy: process.env.NODE_ENV === 'production'
   }));
 
   app.use(passport.initialize());

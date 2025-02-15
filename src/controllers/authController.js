@@ -46,10 +46,6 @@ class AuthController {
   }
 
   handleGoogleCallback(req, res, next) {
-    console.log('Google callback received');
-    console.log('Query params:', req.query);
-    console.log('Headers:', req.headers);
-    
     const { frontendURL, callbackURL } = getURLs();
     
     passport.authenticate('google', {
@@ -71,6 +67,10 @@ class AuthController {
           console.error('Login error:', err);
           return res.redirect(`${frontendURL}/login?error=auth_failed`);
         }
+        
+        // Add debug logging
+        console.log('User logged in successfully:', user);
+        console.log('Session:', req.session);
         
         return res.redirect(`${frontendURL}/welcome`);
       });
