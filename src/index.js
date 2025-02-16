@@ -1,7 +1,8 @@
+// index.js
 import * as process from 'process';
 import express from 'express';
 import cors from 'cors';
-import session from 'express-session';
+import cookieSession from 'cookie-session';
 import passport from 'passport';
 import { configurePassport } from './config/passport.js';
 import authRoutes from './routes/auth.js';
@@ -31,23 +32,37 @@ export const createApp = () => {
     },
     credentials: true
   }));
+
   app.use(express.json());
 
-  app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-    },
-    proxy: process.env.NODE_ENV === 'production'
+  // Reemplazar express-session con cookie-session
+  app.use(cookieSession({
+    name: 'session',
+    keys: [process.env.SESSION_SECRET],
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }));
+
+  // Configuración adicional para Passport
+  app.use((req, res, next) => {
+    if (req.session && !req.session.regenerate) {
+      req.session.regenerate = (cb) => {
+        cb();
+      };
+    }
+    if (req.session && !req.session.save) {
+      req.session.save = (cb) => {
+        cb();
+      };
+    }
+    next();
+  });
 
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // Configurar Passport antes de usar las rutas
   configurePassport();
 
   app.use((req, res, next) => {
@@ -55,7 +70,10 @@ export const createApp = () => {
       method: req.method,
       path: req.path,
       origin: req.headers.origin,
-      host: req.headers.host
+      host: req.headers.host,
+      env: process.env.NODE_ENV,
+      clientID: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not Set',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not Set'
     });
     next();
   });
@@ -71,8 +89,8 @@ export const createApp = () => {
   });
 
   app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
+    console.error('Error:', err);
+    res.status(500).json({ error: err.message || 'Something went wrong!' });
   });
 
   if (process.env.NODE_ENV === 'development') {

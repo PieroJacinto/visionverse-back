@@ -54,12 +54,10 @@ class AuthController {
     console.log('Iniciando autenticación con Facebook');
     const { facebookCallbackURL } = getURLs();
     
-    // Guardar la URL de retorno en la sesión si existe
     if (req.query.returnTo) {
       req.session.returnTo = req.query.returnTo;
     }
     
-    // Log adicional para debugging
     if (req.query.debug) {
       console.log('Debug mode activated for Facebook auth');
       console.log('Session:', req.session);
@@ -154,24 +152,26 @@ class AuthController {
   }
 
   logout(req, res) {
-    req.logout((err) => {
-      if (err) {
-        console.error("Error al cerrar sesión:", err);
-        return res.status(500).json({ success: false, message: "Error al cerrar sesión" });
-      }
-  
-      req.session.destroy((err) => {
-        if (err) {
-          console.error("Error al destruir la sesión:", err);
-          return res.status(500).json({ success: false, message: "Error al cerrar sesión" });
-        }
-  
-        res.clearCookie('connect.sid', { path: '/', httpOnly: true, secure: true, sameSite: 'none' });
-  
+    // Nueva implementación del logout para cookie-session
+    try {
+      // Limpiar la sesión
+      req.session = null;
+      
+      // Limpiar la autenticación de Passport
+      req.logout(() => {
         const { frontendURL } = getURLs();
-        return res.json({ success: true, redirectUrl: `${frontendURL}/login` });
+        res.json({ 
+          success: true, 
+          redirectUrl: `${frontendURL}/login` 
+        });
       });
-    });
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al cerrar sesión" 
+      });
+    }
   }
 }
 
