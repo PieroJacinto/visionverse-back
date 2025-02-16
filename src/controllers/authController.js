@@ -150,14 +150,12 @@ class AuthController {
       });
     })(req, res, next);
   }
-
   logout(req, res) {
-    // Nueva implementación del logout para cookie-session
     try {
-      // Limpiar la sesión
+      // Destroy the session first
       req.session = null;
       
-      // Limpiar la autenticación de Passport
+      // Clear authentication
       req.logout(() => {
         const { frontendURL } = getURLs();
         res.json({ 

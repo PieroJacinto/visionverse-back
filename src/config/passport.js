@@ -1,4 +1,3 @@
-// passport.js
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import passport from "passport";
@@ -13,29 +12,29 @@ export const configurePassport = () => {
   const googleCallbackURL = `${baseURL}/api/auth/google/callback`;
   const facebookCallbackURL = `${baseURL}/api/auth/facebook/callback`;
 
-  // Log de configuración
-  console.log('Passport Configuration:', {
-    environment: process.env.NODE_ENV,
-    baseURL,
-    googleCallbackURL,
-    facebookCallbackURL,
-    googleClientId: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not Set',
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not Set',
-    facebookAppId: process.env.FACEBOOK_APP_ID ? 'Set' : 'Not Set',
-    facebookAppSecret: process.env.FACEBOOK_APP_SECRET ? 'Set' : 'Not Set'
-  });
-
-  passport.serializeUser((user, done) => {
-    const userData = {
-      id: user.id,
-      provider: user.provider,
-      email: user.emails?.[0]?.value || user.email,
-      displayName: user.displayName
-    };
-    done(null, userData);
+  // Serialización más detallada
+  passport.serializeUser((profile, done) => {
+    console.log('Serializando usuario:', profile);
+    try {
+      const user = {
+        id: profile.id,
+        provider: profile.provider,
+        email: profile.emails?.[0]?.value || profile._json?.email,
+        displayName: profile.displayName,
+        // Añadir más datos si los necesitas
+        photo: profile.photos?.[0]?.value,
+        name: profile.name
+      };
+      console.log('Usuario serializado:', user);
+      done(null, user);
+    } catch (error) {
+      console.error('Error al serializar usuario:', error);
+      done(error, null);
+    }
   });
 
   passport.deserializeUser((user, done) => {
+    console.log('Deserializando usuario:', user);
     done(null, user);
   });
 
@@ -53,7 +52,12 @@ export const configurePassport = () => {
         },
         function (accessToken, refreshToken, profile, done) {
           console.log("Google authentication successful", profile);
-          return done(null, profile);
+          // Asegurarse de que el email esté incluido
+          const user = {
+            ...profile,
+            email: profile.emails?.[0]?.value
+          };
+          return done(null, user);
         }
       )
     );
@@ -69,12 +73,17 @@ export const configurePassport = () => {
           clientID: process.env.FACEBOOK_APP_ID,
           clientSecret: process.env.FACEBOOK_APP_SECRET,
           callbackURL: facebookCallbackURL,
-          profileFields: ['id', 'displayName', 'email'],
+          profileFields: ['id', 'displayName', 'email', 'photos', 'name'],
           proxy: true
         },
         function(accessToken, refreshToken, profile, done) {
           console.log("Facebook authentication successful", profile);
-          return done(null, profile);
+          // Asegurarse de que el email esté incluido
+          const user = {
+            ...profile,
+            email: profile.emails?.[0]?.value
+          };
+          return done(null, user);
         }
       )
     );

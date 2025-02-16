@@ -1,4 +1,3 @@
-// index.js
 import * as process from 'process';
 import express from 'express';
 import cors from 'cors';
@@ -33,38 +32,44 @@ export const createApp = () => {
     credentials: true
   }));
 
+  app.set('trust proxy', 1); // Necesario para HTTPS en Vercel
+
   app.use(express.json());
 
-  // Reemplazar express-session con cookie-session
+  // Configuración de cookie-session
   app.use(cookieSession({
     name: 'session',
     keys: [process.env.SESSION_SECRET],
     maxAge: 24 * 60 * 60 * 1000, // 24 horas
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    httpOnly: true,
+    signed: true
   }));
 
-  // Configuración adicional para Passport
+  // Añadir métodos de compatibilidad para Passport
   app.use((req, res, next) => {
     if (req.session && !req.session.regenerate) {
-      req.session.regenerate = (cb) => {
-        cb();
+      req.session.regenerate = (callback) => {
+        callback();
       };
     }
     if (req.session && !req.session.save) {
-      req.session.save = (cb) => {
-        cb();
+      req.session.save = (callback) => {
+        callback();
       };
     }
     next();
   });
 
+  // Configuración de Passport
   app.use(passport.initialize());
   app.use(passport.session());
   
   // Configurar Passport antes de usar las rutas
   configurePassport();
 
+  // Middleware para logging
   app.use((req, res, next) => {
     console.log('Request:', {
       method: req.method,
@@ -73,7 +78,9 @@ export const createApp = () => {
       host: req.headers.host,
       env: process.env.NODE_ENV,
       clientID: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not Set',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not Set'
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not Set',
+      session: req.session ? 'Exists' : 'None',
+      user: req.user ? 'Authenticated' : 'Not Authenticated'
     });
     next();
   });
