@@ -12,7 +12,10 @@ const getURLs = () => {
       : 'http://localhost:3000/api/auth/google/callback',
     facebookCallbackURL: isProduction 
       ? 'https://visionverse-back.vercel.app/api/auth/facebook/callback'
-      : 'http://localhost:3000/api/auth/facebook/callback'
+      : 'http://localhost:3000/api/auth/facebook/callback',
+    appleCallbackURL: isProduction
+      ? 'https://visionverse-back.vercel.app/api/auth/apple/callback'
+      : 'http://localhost:3000/api/auth/apple/callback'
   };
 };
 
@@ -72,6 +75,29 @@ class AuthController {
       callbackURL: facebookCallbackURL,
       profileFields: ['id', 'emails', 'name'],
       enableProof: true
+    })(req, res, next);
+  }
+
+  initiateAppleAuth(req, res, next) {
+    console.log('Iniciando autenticación con Apple');
+    const { appleCallbackURL } = getURLs();
+    
+    if (req.query.returnTo) {
+      req.session.returnTo = req.query.returnTo;
+    }
+    
+    if (req.query.debug) {
+      console.log('Debug mode activated for Apple auth');
+      console.log('Session:', req.session);
+      console.log('Apple Client ID:', process.env.APPLE_CLIENT_ID);
+      console.log('Apple Team ID exists:', !!process.env.APPLE_TEAM_ID);
+    }
+    
+    console.log('Using callback URL:', appleCallbackURL);
+    
+    passport.authenticate('apple', {
+      scope: ['name', 'email'],
+      callbackURL: appleCallbackURL
     })(req, res, next);
   }
 
@@ -150,6 +176,45 @@ class AuthController {
       });
     })(req, res, next);
   }
+
+  handleAppleCallback(req, res, next) {
+    const { frontendURL, appleCallbackURL } = getURLs();
+    
+    passport.authenticate('apple', {
+      callbackURL: appleCallbackURL,
+      failureRedirect: `${frontendURL}/login?error=auth_failed`
+    }, (err, user, info) => {
+      if (err) {
+        console.error('Error de autenticación de Apple:', err);
+        return res.redirect(`${frontendURL}/login?error=auth_failed&message=${encodeURIComponent(err.message)}`);
+      }
+      
+      if (!user) {
+        console.log('No se encontró usuario:', info);
+        return res.redirect(`${frontendURL}/login?error=unauthorized`);
+      }
+      
+      req.logIn(user, (err) => {
+        if (err) {
+          console.error('Error en login:', err);
+          return res.redirect(`${frontendURL}/login?error=auth_failed`);
+        }
+        
+        console.log('Usuario autenticado exitosamente:', {
+          id: user.id,
+          provider: user.provider,
+          email: user.email,
+          displayName: user.displayName
+        });
+        
+        const returnTo = req.session.returnTo || '/welcome';
+        delete req.session.returnTo;
+        
+        return res.redirect(`${frontendURL}${returnTo}`);
+      });
+    })(req, res, next);
+  }
+
   logout(req, res) {
     try {
       // Destroy the session first
@@ -170,6 +235,34 @@ class AuthController {
         message: "Error al cerrar sesión" 
       });
     }
+  }
+
+  // Método de prueba para desarrollo
+  testAppleAuth(req, res) {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    const testUser = {
+      id: 'test-apple-id-123',
+      provider: 'apple',
+      email: 'test-apple@example.com',
+      displayName: 'Test Apple User',
+      name: {
+        givenName: 'Test',
+        familyName: 'Apple User'
+      }
+    };
+
+    req.login(testUser, (err) => {
+      if (err) {
+        console.error('Error en login de prueba:', err);
+        return res.redirect('/login?error=test_auth_failed');
+      }
+      
+      const { frontendURL } = getURLs();
+      return res.redirect(`${frontendURL}/welcome`);
+    });
   }
 }
 
