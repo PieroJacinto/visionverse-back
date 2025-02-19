@@ -124,21 +124,11 @@ class AuthController {
           return res.redirect(`${frontendURL}/login?error=auth_failed`);
         }
         
-        console.log('User logged in successfully:', {
-          id: user.id,
-          provider: user.provider,
-          email: user.email,
-          displayName: user.displayName
-        });
-        
-        const returnTo = req.session.returnTo || '/welcome';
-        delete req.session.returnTo;
-        
-        return res.redirect(`${frontendURL}${returnTo}`);
+        // Redirigir a KYC en lugar de welcome
+        return res.redirect(`${frontendURL}/kyc`);
       });
     })(req, res, next);
   }
-  
   handleFacebookCallback(req, res, next) {
     const { frontendURL, facebookCallbackURL } = getURLs();
     

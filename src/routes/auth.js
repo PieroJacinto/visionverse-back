@@ -1,5 +1,6 @@
 import express from 'express';
 import authController from '../controllers/authController.js';
+import kycRoutes from "./kyc.js"
 
 const router = express.Router();
 
@@ -19,4 +20,13 @@ if (process.env.NODE_ENV === 'development') {
   router.get('/apple/test', authController.testAppleAuth);
 }
 
+
+router.use('/kyc', isAuthenticated, kycRoutes);
+
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: 'Not authenticated' });
+}
 export default router;
